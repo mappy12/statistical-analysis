@@ -63,33 +63,36 @@ print(f"Сумма относительных частот: {sum_rel_freq}")
 
 print("\n.............#2.1.............\n")
 
-
+bins_range1 = list(range(2, 11))
+bins_range2 = list(range(15,26))
 plt.figure(figsize=(14,8))
 
-for intervals_count in range(2, 11):
-    plt.hist(data, bins=intervals_count, density=True, alpha=0.5,
-             label=f"{intervals_count} интервала")
+for i, bins in enumerate(bins_range1):
+    plt.subplot(3, 3, i+1)
+    plt.hist(data, bins=bins, density=True, alpha=0.5,
+             label=f"{bins} интервала")
+    plt.xlabel("Значения СВ X")
+    plt.ylabel("Относительная частота")
+    plt.legend()
+    plt.grid(True, alpha=0.3)
+plt.tight_layout(pad=3.0)
 
-plt.title("[2.1] Гистограммы относительных частот (2-10)")
-plt.xlabel("Значения СВ X")
-plt.ylabel("Относительная частота")
-plt.legend()
-plt.grid(True, alpha=0.3)
 
 plt.show()
 
 
 plt.figure(figsize=(14,8))
 
-for intervals_count in range(15, 26):
-    plt.hist(data, bins=intervals_count, density=True, alpha=0.5,
-             label=f"{intervals_count} интервала")
+for i, bins in enumerate(bins_range2):
+    plt.subplot(3, 4, i+1)
+    plt.hist(data, bins=bins, density=True, alpha=0.5,
+             label=f"{bins} интервала")
+    plt.xlabel("Значения СВ X")
+    plt.ylabel("Относительная частота")
+    plt.legend()
+    plt.grid(True, alpha=0.3)
+plt.tight_layout(pad=3.0)
 
-plt.title("[2.1] Гистограммы относительных частот (15-25)")
-plt.xlabel("Значения СВ X")
-plt.ylabel("Относительная частота")
-plt.legend()
-plt.grid(True, alpha=0.3)
 
 plt.show()
 
@@ -183,6 +186,23 @@ print(f"Интерквартильный размах (IQR): {iqr:.4f}")
 print(f"Нижняя граница усов: {lower_whisker:.4f}")
 print(f"Верхняя граница усов: {upper_whisker:.4f}")
 
+print("\n(D) Теоретически ожидаемые границы бокс-плота для N(-1, 2):")
+
+q_25 = norm.ppf(0.25)  # -0.6745
+q_75 = norm.ppf(0.75)
+
+q1_theor = a + sigma * q_25
+q3_theor = a + sigma * q_75
+iqr_theor = q3_theor - q1_theor
+
+lower_whisker_theor = q1_theor - 1.5 * iqr_theor
+upper_whisker_theor = q3_theor + 1.5 * iqr_theor
+
+print(f"Теоретический Q1: {q1_theor:.4f}")
+print(f"Теоретический Q3: {q3_theor:.4f}")
+print(f"Теоретический IQR: {iqr_theor:.4f}")
+print(f"Теоретическая нижняя граница усов: {lower_whisker_theor:.4f}")
+print(f"Теоретическая верхняя граница усов: {upper_whisker_theor:.4f}")
 
 print("\n.............#3.1.............\n")
 

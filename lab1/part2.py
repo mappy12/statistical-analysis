@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from scipy import stats
 import pandas as pd
+import math
 
 n = 125
 a, b = 1, 2
@@ -103,95 +104,32 @@ print(f"Эксцесс: {excess:.4f}")
 
 print("..........#5..........")
 
+confidence = 0.95
+alpha = 1 - confidence
+n = - 1/(2*epsilon**2) * math.log(alpha / 2)
+min_n = int(np.ceil(n))
+interval_y_theor = int(1 + math.log2(min_n))
+print(min_n, interval_y_theor)
 
-def max_deviation(n, a, b):
-    sample = np.random.uniform(a, b, n)
-    ecdf = np.sort(sample)
-    theoretical_cdf = stats.uniform.cdf(ecdf, a, b - a)
-    empirical_cdf = np.arange(1, n + 1) / n
-    return np.max(np.abs(empirical_cdf - theoretical_cdf))
-
-
-print("Подбор объема выборки для точности ε =", epsilon)
-
-n_new = 125  # начинаем с исходного объема
-max_iterations = 10000  # ограничение на число итераций
-found = False
-
-for i in range(max_iterations):
-    dev = max_deviation(n_new, a, b)
-
-    if i % 100 == 0:  # Выводим прогресс каждые 100 итераций
-        print(f"n = {n_new}, отклонение = {dev:.6f}")
-
-    if dev <= epsilon:
-        found = True
-        break
-    n_new += 1
-
-if found:
-    print(f"\n✅ Требуемый объем выборки для ε={epsilon}: n = {n_new}")
-    print(f"Фактическое отклонение: {dev:.6f}")
-else:
-    print(f"\n❌ Не удалось найти подходящий n за {max_iterations} итераций")
-    n_new = 1000  # используем запасной вариант
-
-# Построение гистограммы для найденного n
-print(f"\nСтроим гистограмму для n = {n_new}...")
-
-Y_new = np.random.uniform(a, b, n_new)
-
-plt.figure(figsize=(12, 5))
-
-# Гистограмма относительных частот и теоретическая плотность
-plt.subplot(1, 2, 1)
-counts, bins, patches = plt.hist(Y_new, bins=10, density=True, alpha=0.7,
-                                 color='lightblue', edgecolor='black',
-                                 label='Гистограмма относительных частот')
-
-# Теоретическая плотность равномерного распределения
-x = np.linspace(a - 0.1, b + 0.1, 1000)
-plt.plot(x, stats.uniform.pdf(x, a, b - a), 'r-', lw=2,
-         label='Теоретическая плотность U(1,2)')
-
-plt.title(
-    f'Гистограмма и теоретическая плотность\n(n = {n_new}, ε = {epsilon})')
-plt.xlabel('Y')
-plt.ylabel('Плотность вероятности')
-plt.legend()
+plt.figure(figsize=(14,8))
+plt.hist(Y, bins=interval_y_theor, density=True, color='lightgreen', edgecolor='red')
+plt.title(f'Гистограмма {(bins)} интервалов)')
+plt.xlabel('Значение СВ')
+plt.ylabel('Относительная частота')
 plt.grid(True, alpha=0.3)
+x = np.linspace(0, 3, 1000)
 
-# График эмпирической и теоретической функций распределения
-plt.subplot(1, 2, 2)
-sorted_Y = np.sort(Y_new)
-empirical_cdf = np.arange(1, len(sorted_Y) + 1) / len(sorted_Y)
-theoretical_cdf = stats.uniform.cdf(sorted_Y, a, b - a)
+uniform = stats.uniform(1, 2)
 
-plt.plot(sorted_Y, empirical_cdf, 'b-', lw=2, alpha=0.7,
-         label='Эмпирическая ФР')
-plt.plot(sorted_Y, theoretical_cdf, 'r-', lw=2, alpha=0.7,
-         label='Теоретическая ФР')
-plt.axhline(y=0, color='k', linestyle='-', alpha=0.3)
-plt.axhline(y=1, color='k', linestyle='-', alpha=0.3)
+pdf = uniform.pdf(x)
 
-# Показываем максимальное отклонение
-max_dev = np.max(np.abs(empirical_cdf - theoretical_cdf))
-max_idx = np.argmax(np.abs(empirical_cdf - theoretical_cdf))
-plt.plot([sorted_Y[max_idx], sorted_Y[max_idx]],
-         [empirical_cdf[max_idx], theoretical_cdf[max_idx]],
-         'g--', lw=2, label=f'Макс. отклонение = {max_dev:.4f}')
-
-plt.title(f'Эмпирическая и теоретическая ФР\n(отклонение ≤ {epsilon})')
-plt.xlabel('Y')
-plt.ylabel('Функция распределения')
+plt.plot(x, pdf, '-r', label='Теоретическая функция плотности вероятности')
+plt.xlabel("Y")
+plt.ylabel("Плотность вероятности")
+plt.title("Нормальное распределение")
 plt.legend()
-plt.grid(True, alpha=0.3)
 
-plt.tight_layout()
 plt.show()
 
-# Проверка точности
-final_deviation = max_deviation(n_new, a, b)
-print(
-    f"\nПроверка: максимальное отклонение для n={n_new}: {final_deviation:.6f}")
-print(f"Условие выполнено: {final_deviation <= epsilon}")
+
+
