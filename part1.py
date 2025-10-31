@@ -40,17 +40,17 @@ print("............#1.2............\n")
 print("СПОСОБ 1 - Аналитический:")
 
 p = (1 + gamma) / 2
-t_critical = stats.t.ppf(p, df=n-1)
+t = stats.t.ppf(p, df=n-1)
 
 sample_mean = np.mean(data)
 
 s2 = np.var(data, ddof=1)  # S² = исправленная дисперсия
 s = np.sqrt(s2)
 
-margin = t_critical * s / np.sqrt(n)
+margin = t * s / np.sqrt(n)
 ci_analytical = (sample_mean - margin, sample_mean + margin)
 
-print(f"Критическое значение t({n-1}) = {t_critical:.4f}")
+print(f"Критическое значение t({n-1}) = {t:.4f}")
 print(f"Выборочное среднее = {sample_mean:.4f}")
 print(f"Исправленная дисперсия S² = {s2:.4f}")
 print(f"Стандартное отклонение S = {s:.4f}")
@@ -143,33 +143,29 @@ print("............#3............\n")
 
 n_range = np.arange(5, 101, 5)  # от 5 до 100 с шагом 5
 
-# Длины доверительных интервалов для разных объемов выборки
-lengths_mean_known_n = []  # мат. ожидание, известная дисперсия
-lengths_mean_unknown_n = []  # мат. ожидание, неизвестная дисперсия
-lengths_variance_n = []  # дисперсия
+lengths_mean_known_n = []
+lengths_mean_unknown_n = []
+lengths_variance_n = []  #
 
 for n_val in n_range:
-    # Для мат. ожидания при известной дисперсии
     z_quantile = stats.norm.ppf((1 + gamma) / 2)
     length_mean_known = 2 * z_quantile * sigma / np.sqrt(n_val)
     lengths_mean_known_n.append(length_mean_known)
 
-    # Для мат. ожидания при неизвестной дисперсии
     t_quantile = stats.t.ppf((1 + gamma) / 2, df=n_val - 1)
-    # Используем теоретическое значение s ≈ σ для сравнения
+
     length_mean_unknown = 2 * t_quantile * sigma / np.sqrt(n_val)
     lengths_mean_unknown_n.append(length_mean_unknown)
 
-    # Для дисперсии
+
     alpha_var = (1 - gamma) / 2
     beta_var = (1 + gamma) / 2
     chi2_alpha = stats.chi2.ppf(alpha_var, df=n_val - 1)
     chi2_beta = stats.chi2.ppf(beta_var, df=n_val - 1)
-    # Используем теоретическое значение s² ≈ σ² для сравнения
+
     length_var = (n_val - 1) * sigma2 * (1 / chi2_alpha - 1 / chi2_beta)
     lengths_variance_n.append(length_var)
 
-# Построение графиков
 plt.figure(figsize=(12, 8))
 
 # График для математического ожидания
@@ -195,3 +191,39 @@ plt.legend()
 
 plt.tight_layout()
 plt.show()
+
+print("............#4............\n")
+
+M = 2400
+cover_count = 0
+confidence_intervals = []
+
+print(f"Моделируем {M} выборок объема n = {n}...")
+
+for i in range(M):
+    sample_m = np.random.normal(a, sigma, n)
+    sample_mean = np.mean(sample_m)
+    s_m = np.std(sample_m, ddof=1)
+
+    # Строим доверительный интервал
+    t_critical = stats.t.ppf((1 + gamma) / 2, df=n - 1)
+    margin = t_critical * s_m / np.sqrt(n)
+    ci = (sample_mean - margin, sample_mean + margin)
+    confidence_intervals.append(ci)
+
+    if ci[0] <= a <= ci[1]:
+        cover_count += 1
+
+# Точечная оценка надежности
+gamma_star = cover_count / M
+
+print(f"Построено {M} доверительных интервалов")
+print("\nПримеры доверительных интервалов (первые 5):")
+for i in range(5):
+    covers = "ПОКРЫВАЕТ" if confidence_intervals[i][0] <= a <= \
+                            confidence_intervals[i][1] else "НЕ ПОКРЫВАЕТ"
+    print(
+        f"Интервал {i + 1}: ({confidence_intervals[i][0]:.3f}, {confidence_intervals[i][1]:.3f}) - {covers} a = {a}")
+
+print(f"\nТочечная оценка надежности γ* = {gamma_star:.4f}")
+print(f"Количество интервалов, покрывающих a = {a}: {cover_count} из {M}")
