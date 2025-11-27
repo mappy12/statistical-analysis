@@ -11,13 +11,13 @@ ssl._create_default_https_context = ssl._create_unverified_context
 penguins = sns.load_dataset('penguins')
 
 species = 'Chinstrap'
-sex = 'Female'
+gender = 'Female'
 variable = 'bill_depth_mm'
 alpha = 0.035
 
 data = penguins[
     (penguins['species'] == species) &
-    (penguins['sex'] == sex)
+    (penguins['sex'] == gender)
 ][variable].dropna()
 
 print(f"Объем выборки: {len(data)}")
@@ -26,7 +26,7 @@ print(f"Первые 5 значений:\n{data.head()}")
 print("\n...............#1...............\n")
 
 fig, axes = plt.subplots(2, 2, figsize=(12, 10))
-fig.suptitle(f'Визуальный анализ распределения {variable}\n({species}, {sex})', fontsize=14)
+fig.suptitle(f'Визуальный анализ распределения {variable}\n({species}, {gender})', fontsize=14)
 
 # 1.1 Гистограмма с кривой плотности и нормальным распределением
 axes[0, 0].hist(data, bins=10, density=True, alpha=0.7, color='skyblue', edgecolor='black')
@@ -88,7 +88,7 @@ for key, value in stats_dict.items():
 print("\n...............#3...............\n")
 
 print(f"Переменная: {variable}")
-print(f"Вид: {species}, Пол: {sex}")
+print(f"Вид: {species}, Пол: {gender}")
 print(f"Уровень значимости α = {alpha}")
 print(f"Объем выборки: n = {len(data)}")
 print()
@@ -118,12 +118,12 @@ print("   H₁: Распределение не является нормаль�
 result_ad = anderson(data, dist='norm')
 print(f"   Статистика: A² = {result_ad.statistic:.4f}")
 
-# Выводим все критические значения
+# Критические значения
 print("   Критические значения:")
 for i in range(len(result_ad.significance_level)):
     print(f"   {result_ad.significance_level[i]*100}%: {result_ad.critical_values[i]:.4f}")
 
-# Интерполяция для нашего α=0.035
+# Интерполяция для α=0.035
 critical_value_035 = np.interp(alpha,
                               [0.15, 0.10, 0.05, 0.025, 0.01],
                               result_ad.critical_values)
@@ -224,14 +224,14 @@ penguins = sns.load_dataset('penguins')
 
 # Параметры варианта 6
 species = 'Chinstrap'
-sex = 'Female'
+gender = 'Female'
 variable = 'bill_depth_mm'
 alpha = 0.035
 
 # Фильтрация данных для определения объема выборки
 data = penguins[
     (penguins['species'] == species) &
-    (penguins['sex'] == sex)
+    (penguins['sex'] == gender)
     ][variable].dropna()
 
 n = len(data)  # объем выборки
