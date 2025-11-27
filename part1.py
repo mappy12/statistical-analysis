@@ -18,7 +18,7 @@ alpha = 0.035
 data = penguins[
     (penguins['species'] == species) &
     (penguins['sex'] == gender)
-][variable].dropna()
+][variable].dropna().reset_index(drop=True)
 
 print(f"Объем выборки: {len(data)}")
 print(f"Первые 5 значений:\n{data.head()}")
