@@ -1,7 +1,6 @@
-import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import scipy.stats as stats
+
 from scipy.stats import shapiro, anderson, normaltest, chi2, norm, chisquare, t
 import seaborn as sns
 import ssl
@@ -83,7 +82,7 @@ stats_dict = {
 
 print("\n=== ОПИСАТЕЛЬНАЯ СТАТИСТИКА ===")
 for key, value in stats_dict.items():
-    print(f"{key}: {value:.4f}")
+    print(f"{key}: {value}")
 
 print("\n...............#3...............\n")
 
@@ -159,7 +158,7 @@ print("4. КРИТЕРИЙ ХИ-КВАДРАТ")
 print("   H₀: Распределение соответствует нормальному")
 print("   H₁: Распределение не соответствует нормальному")
 
-# Группируем данные в интервалы (используем правило Стерджеса)
+# Группировка данных в интервалы (правило Стерджеса)
 n_bins = max(3, int(1 + 3.322 * np.log10(len(data))))  # минимум 3 интервала
 f_obs, bins = np.histogram(data, bins=n_bins)
 
@@ -247,7 +246,7 @@ print()
 # Параметры моделирования
 M = 1000  # количество экспериментов
 
-# Оценка мощности критерия против альтернативы H1
+# Сколько раз была отвергнута H₀
 rejections = 0
 
 for i in range(M):
