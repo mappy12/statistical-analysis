@@ -211,5 +211,3 @@ sns.heatmap(df_regions[normal_years].corr(), annot=True, cmap='coolwarm', center
 ax.set_title('Матрица корреляции между годами (ДФО)')
 plt.tight_layout()
 plt.show()
-
-print("\nЛабораторная работа завершена!")
