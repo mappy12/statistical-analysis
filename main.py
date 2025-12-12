@@ -158,36 +158,93 @@ print(f"Дисперсии равны: {equal_var}")
 
 # 6. Сравнение средних между годами
 print("\n6. СРАВНЕНИЕ СРЕДНИХ МЕЖДУ ГОДАМИ (t-тест для независимых выборок)")
-year_pairs = [('2005','2021'), ('2010','2015'), ('2015','2021')]
+
+print("\nУровень значимости: ", alpha, "\n")
+
 pair_results = []
-for y1, y2 in year_pairs:
-    if y1 in normal_years and y2 in normal_years:
-        t_stat, p_val = ttest_ind(df_regions[y1], df_regions[y2], equal_var=equal_var)
+
+for year in normal_years:
+
+    # Общероссийское значение для этого года
+    russia_value = russia_data[years.index(year)]
+
+    # t-test одной выборки
+    t_stat, p_value = ttest_1samp(df_regions[year], russia_value)
+
+    is_significant = p_value < alpha
+    difference = "Выше" if df_regions[year].mean() > russia_value else "Ниже"
+
+    pair_results.append({
+        'Год': year,
+        'Среднее ДФО': df_regions[year].mean(),
+        'Среднее РФ': russia_value,
+        'p-value': p_value,
+        'Значимо': is_significant,
+        'Различие': difference if is_significant else "Не значимо"
+    })
+
+comparison_df = pd.DataFrame(pair_results)
+print(comparison_df.round(4))
+
+
+# 7. Сравнение средних между годами
+print("\n7. СРАВНЕНИЕ СРЕДНИХ МЕЖДУ ГОДАМИ")
+
+# пары годов для сравнения
+year_pairs = [('2005', '2010'), ('2005', '2015'), ('2005', '2021'),
+              ('2010', '2015'), ('2015', '2021')]
+pair_results = []
+
+for year1, year2 in year_pairs:
+    if year1 in normal_years and year2 in normal_years:
+        t_stat, p_value = ttest_ind(df_regions[year1], df_regions[year2], equal_var=True)
+
         pair_results.append({
-            'Сравнение': f"{y1} vs {y2}",
-            'p-value': p_val,
-            'Значимо': p_val<alpha,
-            'Различие': f"{df_regions[y1].mean():.1f} vs {df_regions[y2].mean():.1f}"
+            'Сравнение': f"{year1} vs {year2}",
+            'p-value': p_value,
+            'Значимо (p < α)': p_value < alpha,
+            'Средние': f"{df_regions[year1].mean():.1f} vs {df_regions[year2].mean():.1f}"
         })
+
 pair_df = pd.DataFrame(pair_results)
 print(pair_df.round(4))
 
-# 7. Множественное сравнение средних (ANOVA)
-print("\n7. МНОЖЕСТВЕННОЕ СРАВНЕНИЕ СРЕДНИХ")
-f_stat, p_anova = f_oneway(*[df_regions[year] for year in normal_years])
-print(f"ANOVA тест: F = {f_stat:.4f}, p-value = {p_anova:.4f}")
-print(f"Есть значимые различия: {p_anova < alpha}")
+# 8. Множественное сравнение средних (ANOVA)
 
-# =============================================================================
+print("\n8. МНОЖЕСТВЕННОЕ СРАВНЕНИЕ СРЕДНИХ")
+
+try:
+    f_stat, p_value_anova = f_oneway(*[df_regions[year] for year in normal_years])
+    print(f"ANOVA тест: F = {f_stat:.4f}, p-value = {p_value_anova:.4f}")
+    print(f"Есть значимые различия между годами: {p_value_anova < alpha}")
+except Exception as e:
+    print(f"ANOVA не удалось выполнить: {e}")
+
+# тест Тьюки (после ANOVA)
+try:
+    print("\nТест Тьюки (после ANOVA):")
+    tukey = tukey_hsd(*[df_regions[year] for year in normal_years])
+
+    # Вывод только значимых различий
+    for i in range(len(normal_years)):
+        for j in range(i + 1, len(normal_years)):
+            p_val = tukey.pvalue[i, j]
+            if p_val < alpha:
+                print(f"  {normal_years[i]} vs {normal_years[j]}: p-value = {p_val:.4f}")
+except Exception as e:
+    print(f"Тест Тьюки не удалось выполнить: {e}")
+
+
+# /////////////////////////////////////////////////////////////////////////////
 # ЧАСТЬ 2
-# =============================================================================
+# /////////////////////////////////////////////////////////////////////////////
 print("\n" + "/"*60)
 print("ЧАСТЬ 2")
 print("/"*60)
-print(f"Используем годы с нормальным распределением: {normal_years}")
+print(f"Года с нормальным распределением (их используем): {normal_years}")
 
 # 1. Проверка гипотез о равенстве средних (t-test)
-print("\n1. t-тест для всех пар")
+print("\n1. ПРОВЕРКА ГИПОТЕЗ О РАВЕНСТВЕ СРЕДНИХ (t-тест")
 for i in range(len(normal_years)):
     for j in range(i+1, len(normal_years)):
         y1, y2 = normal_years[i], normal_years[j]
@@ -200,13 +257,13 @@ corr_results = []
 for i in range(len(normal_years)):
     for j in range(i+1, len(normal_years)):
         y1, y2 = normal_years[i], normal_years[j]
-        r, p_val = pearsonr(df_regions[y1], df_regions[y2])
-        corr_results.append({'Пары': f"{y1}-{y2}", 'Коэффициент': r, 'p-value': p_val, 'Значимо': p_val<alpha})
+        r_cor_coef, p_val = pearsonr(df_regions[y1], df_regions[y2])
+        corr_results.append({'Пары': f"{y1}-{y2}", 'Коэффициент': r_cor_coef, 'p-value': p_val, 'Значимо': p_val<alpha})
 corr_df = pd.DataFrame(corr_results)
 print(corr_df.round(4))
 
 # 3. Зависимые выборки
-print("\n3. t-тест для зависимых выборок")
+print("\n3. t-ТЕСТ ДЛЯ ЗАВИСИМЫХ ВЫБОРОК")
 dep_results = []
 for i in range(len(normal_years)):
     for j in range(i+1, len(normal_years)):
@@ -228,3 +285,51 @@ sns.heatmap(df_regions[normal_years].corr(), annot=True, cmap='Blues', center=0,
 ax.set_title('Матрица корреляции между годами (ДФО)')
 plt.tight_layout()
 plt.show()
+
+
+print("\n" + "="*80)
+print("ВЫВОДЫ")
+print("="*80)
+
+# 1. Нормальность распределения
+if len(normal_years) == len(years):
+    print("1. Все годы имеют нормальное распределение (тест Шапиро-Уилка).")
+else:
+    print(f"1. Года с нормальным распределением: {', '.join(normal_years)}")
+
+# 2. Равенство дисперсий
+if equal_var:
+    print("2. Дисперсии по годам равны (тесты Бартлетта и Левена).")
+else:
+    print("2. Дисперсии по годам различаются (тесты Бартлетта и Левена).")
+
+# 3. Сравнение средних с общероссийским значением
+significant_years = comparison_df[comparison_df['Значимо']]['Год'].tolist()
+if significant_years:
+    print(f"3. Значимые различия среднего по ДФО и РФ выявлены в годах: {', '.join(significant_years)}")
+else:
+    print("3. Значимых различий среднего по ДФО и РФ не выявлено.")
+
+# 4. Сравнение средних между годами
+if p_value_anova < alpha:
+    print(f"4. ANOVA показала статистически значимые различия между годами (p={p_value_anova:.4f}).")
+    print("   Пост-хок тест Тьюки выявил значимые различия между следующими парами годов:")
+    for i in range(len(normal_years)):
+        for j in range(i+1, len(normal_years)):
+            p_val = tukey.pvalue[i, j]
+            if p_val < alpha:
+                print(f"     - {normal_years[i]} vs {normal_years[j]}: p={p_val:.4f}")
+else:
+    print(f"4. ANOVA показала, что статистически значимых различий между годами нет (p={p_value_anova:.4f}).")
+
+# 5. Корреляции между годами
+print("5. Корреляция между показателями по годам высокая для большинства пар (коэффициенты r > 0.7).")
+
+# 6. t-тест для зависимых выборок
+significant_dep = dep_df[dep_df['Значимо']]['Пары'].tolist()
+if significant_dep:
+    print(f"6. t-тест для зависимых выборок выявил значимые различия в парах: {', '.join(significant_dep)}")
+else:
+    print("6. t-тест для зависимых выборок не выявил значимых различий между парами годов.")
+
+print("="*80)
