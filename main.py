@@ -13,27 +13,30 @@ print("ЛАБОРАТОРНАЯ РАБОТА №5")
 print("Вариант 6 - Дальневосточный федеральный округ")
 print("Уровень значимости α = 0.035\n")
 
-# =============================================================================
+# /////////////////////////////////////////////////////////////////////////////
 # ЧАСТЬ 1
-# =============================================================================
+# /////////////////////////////////////////////////////////////////////////////
 
-print("="*60)
+print("/"*60)
 print("ЧАСТЬ 1")
-print("="*60)
+print("/"*60)
 
 # 1. Загрузка данных
 print("\n1. ЗАГРУЗКА ДАННЫХ")
 df = pd.read_excel('CHISLO_DOCTORS.xlsx', sheet_name='MyList')
 
-# Извлекаем данные по регионам ДФО (строки 2–12, 11 регионов)
+russia_data = df.iloc[0, 1:7].values
+pfo_data = df.iloc[1, 1:7].values  # 2005-2021 для ПФО
+
 years = ['2005', '2010', '2015', '2019', '2020', '2021']
-region_names = df.iloc[1:13, 0].tolist()
-regions_data = df.iloc[1:13, 1:7].values
+
+region_names = df.iloc[2:16, 0].values.tolist()
+regions_data = df.iloc[2:16, 1:7].values
+
 df_regions = pd.DataFrame(regions_data, columns=years, index=region_names)
 
 print(f"Количество регионов ДФО: {len(region_names)}")
 print(f"Годы анализа: {', '.join(years)}")
-
 
 print("\nТаблица для сравнения с Excel файлом:")
 print("="*80)
@@ -41,7 +44,12 @@ print(f"{'Регион':<35}", end="")
 for year in years:
     print(f"{year:>8}", end="")
 print()
-print("-"*80)
+print("-"*90)
+
+print(f"{'Дальневосточный округ':<35}", end="")
+for val in pfo_data:
+    print(f"{val:>8.1f}", end="")
+print()
 
 for idx, region in enumerate(df_regions.index):
     print(f"{region:<35}", end="")
@@ -49,7 +57,15 @@ for idx, region in enumerate(df_regions.index):
         print(f"{df_regions.loc[region, year]:>8.1f}", end="")
     print()
 
-print("-"*80)
+print("-"*90)
+
+print(f"{'Россия':<35}", end="")
+for val in russia_data:
+    print(f"{val:>8.1f}", end="")
+print()
+
+print("-"*90)
+
 print(f"{'Среднее по ДФО':<35}", end="")
 for year in years:
     print(f"{df_regions[year].mean():>8.1f}", end="")
@@ -68,7 +84,7 @@ axes[0,0].set_title('Распределение показателя X по го
 axes[0,0].set_ylabel('Число врачей на 10 тыс. населения')
 axes[0,0].grid(True, alpha=0.3)
 
-# Динамика по регионам (первые 8 для наглядности)
+# Динамика по регионам (первые 8)
 for region in df_regions.index[:8]:
     axes[0,1].plot(years, df_regions.loc[region], marker='o', label=region)
 axes[0,1].set_title('Динамика показателя X по регионам ДФО')
@@ -78,7 +94,8 @@ axes[0,1].grid(True, alpha=0.3)
 
 # Среднее по ДФО
 dfo_mean = df_regions.mean()
-axes[1,0].plot(years, dfo_mean, marker='o', color='blue', label='Среднее по ДФО', linewidth=2)
+axes[1,0].plot(years, dfo_mean, marker='o', color='black', label='Среднее по ДФО', linewidth=2)
+axes[1,0].plot(years, russia_data, marker='o', color='pink', label='Российская федерация')
 axes[1,0].set_title('Среднее значение показателя X по ДФО')
 axes[1,0].set_ylabel('Число врачей на 10 тыс. населения')
 axes[1,0].legend()
@@ -128,7 +145,7 @@ normal_df = pd.DataFrame(normality_results)
 print(normal_df.round(4))
 
 normal_years = normal_df[normal_df['Нормальное']]['Год'].tolist()
-print(f"\nГоды с нормальным распределением: {normal_years}")
+print(f"\nГода, имеющие нормальное распределение: {normal_years}")
 
 # 5. Проверка равенства дисперсий
 print("\n5. ПРОВЕРКА РАВЕНСТВА ДИСПЕРСИЙ")
@@ -164,9 +181,9 @@ print(f"Есть значимые различия: {p_anova < alpha}")
 # =============================================================================
 # ЧАСТЬ 2
 # =============================================================================
-print("\n" + "="*60)
+print("\n" + "/"*60)
 print("ЧАСТЬ 2")
-print("="*60)
+print("/"*60)
 print(f"Используем годы с нормальным распределением: {normal_years}")
 
 # 1. Проверка гипотез о равенстве средних (t-test)
@@ -207,7 +224,7 @@ print(f"Статистически значимые различия между 
 
 # Визуализация корреляции
 fig, ax = plt.subplots(figsize=(10,6))
-sns.heatmap(df_regions[normal_years].corr(), annot=True, cmap='coolwarm', center=0, ax=ax)
+sns.heatmap(df_regions[normal_years].corr(), annot=True, cmap='Blues', center=0, ax=ax)
 ax.set_title('Матрица корреляции между годами (ДФО)')
 plt.tight_layout()
 plt.show()
