@@ -1,0 +1,396 @@
+import pandas as pd
+from sklearn.linear_model import LinearRegression
+import numpy as np
+from scipy.stats import f
+from scipy import stats
+
+print("ВАРИАНТ #6")
+
+gamma = 0.955 # Надежность доверительных интервалов
+alpha = 0.045 # Уровень значимости
+gender = 1 # Пол нового сотрудника (1-жен, 0-муж)
+experience = 7 # Стаж нового сотрудника (лет)
+edu_time = 10 # Время на образование нового сотрудника (лет)
+
+data = pd.read_excel("LAB_6_DATA_2025_PART_1.xlsx", sheet_name='lab6')
+
+print("\nПервые 10 строк таблицы:")
+print(data.iloc[:10, :4])
+
+print("\n=== Пункт 1: Регрессия Зарплата ~ ПОЛ ===")
+
+# Пункт 1: Модель 1 - Зарплата от Пол
+y = data['Зарплата (долл. в час)']
+
+X_z = data[['ПОЛ (1-жен, 0- муж)']].values
+
+# Добавляем константу вручную
+X_z = np.hstack([np.ones((X_z.shape[0], 1)), X_z])
+
+# Обучение модели
+model_z = LinearRegression(fit_intercept=False)  # константа уже есть в X_z
+model_z.fit(X_z, y)
+
+print(f"Свободный член (константа): {model_z.coef_[0]:.4f}")
+print(f"Коэффициент при ПОЛ: {model_z.coef_[1]:.4f}")
+
+print("\n=== Пункт 2: Объясняющая способности модели 1 ===")
+
+# Пункт 2: Проверка объясняющей способности модели
+
+# Предсказанные значения
+y_pred = model_z.predict(X_z)
+
+# Остатки
+residuals = y - y_pred
+
+# Общее количество наблюдений и количество коэффициентов
+n = len(y)
+k = X_z.shape[1] - 1  # число независимых переменных без константы
+
+# R^2
+r2_z = model_z.score(X_z, y)
+
+# F-статистика
+ss_reg = np.sum((y_pred - y.mean())**2)
+ss_res = np.sum(residuals**2)
+f_stat_z = (ss_reg / k) / (ss_res / (n - k - 1))
+
+# p-value для F-статистики
+f_pvalue_z = 1 - f.cdf(f_stat_z, dfn=k, dfd=n-k-1)
+
+
+print(f"\nR^2 модели (Зарплата ~ ПОЛ): {r2_z:.4f}")
+print(f"F-статистика: {f_stat_z:.3f}, p-value: {f_pvalue_z:.4e}")
+
+if r2_z > 0.5 and f_pvalue_z < alpha:
+    print("Модель обладает высокой объясняющей способностью")
+else:
+    print("Модель низкого качества")
+
+print("\n=== Пункт 3: Модель 2: Регрессия Зарплата ~ Стаж + Образование + Пол ===")
+
+# Пункт 3: Регрессия Зарплата ~ Стаж + Образование + Пол
+
+y = data['Зарплата (долл. в час)']
+
+X_all = data[['СТАЖ РАБОТЫ (лет)', 'ВРЕМЯ, ЗАТРАЧЕННОЕ НА ОБРАЗОВАНИЕ (лет)', 'ПОЛ (1-жен, 0- муж)']]
+
+# Создаём модель
+model_all = LinearRegression()
+
+# Обучаем модель
+model_all.fit(X_all, y)
+
+coeffs = model_all.coef_
+intercept = model_all.intercept_
+
+# Предсказанные значения
+y_pred = model_all.predict(X_all)
+
+print(f"Коэффициенты модели (coef): {model_all.coef_}")
+print(f"Свободный член модели (intercept): {model_all.intercept_}")
+
+
+print("\n=== Пункт 4: Объясняющая способности модели 2===")
+
+# Пункт 4: Проверка объясняющей способности модели
+
+# Число наблюдений
+n = X_all.shape[0]
+
+# Число предикторов
+k = X_all.shape[1]
+
+# Остатки
+residuals = y - y_pred
+
+# Сумма квадратов регрессии (SSR)
+y_mean = np.mean(y)
+ssr = np.sum((y_pred - y_mean)**2)
+
+# Сумма квадратов ошибок (SSE)
+sse = np.sum((y - y_pred)**2)
+
+# Общая сумма квадратов (SST)
+sst = ssr + sse
+
+# R^2
+r2_all = ssr / sst
+print(f"R^2 модели (Зарплата ~ Стаж + Образование + Пол): {r2_all:.4f}")
+
+f_stat_all = (ssr / k) / (sse / (n - k - 1))
+print(f"F-статистика: {f_stat_all:.3f}")
+
+# p-value для F-статистики
+f_pvalue_all = 1 - f.cdf(f_stat_all, dfn=k, dfd=n-k-1)
+print(f"p-value: {f_pvalue_all:.4e}")
+
+# Оценка качества модели
+if r2_all > 0.5 and f_pvalue_all < alpha:
+    print("Модель обладает высокой объясняющей способностью")
+else:
+    print("Модель низкого качества")
+
+# Пункты 5, 6, 7: Значимость коэффициентов
+
+print("\n=== Пункт 5: Значимость коэффициента при ПОЛ ===")
+
+# Число наблюдений и число предикторов
+n = X_all.shape[0]
+p = X_all.shape[1]
+
+# Предсказанные значения и остатки
+y_pred = model_all.predict(X_all)
+residuals = y - y_pred
+
+# Оценка дисперсии ошибок
+mse = np.sum(residuals ** 2) / (n - p - 1)
+
+# Добавляем константу вручную
+X_with_const = np.column_stack([np.ones(n), X_all.values])
+
+# Матрица (X'X)^(-1)
+xtx_inv = np.linalg.inv(X_with_const.T @ X_with_const)
+
+# Стандартные ошибки коэффициентов
+se = np.sqrt(np.diag(xtx_inv) * mse)
+
+# Коэффициенты модели (с учетом константы)
+coefficients = np.append(model_all.intercept_, model_all.coef_)
+
+# t-статистика для каждого коэффициента
+t_stats = coefficients / se
+
+# p-values для коэффициентов
+p_values = 2 * (1 - stats.t.cdf(np.abs(t_stats), n - p - 1))
+
+# Доверительные интервалы
+t_critical = stats.t.ppf(1 - alpha / 2, n - p - 1)
+ci_lower = coefficients - t_critical * se
+ci_upper = coefficients + t_critical * se
+
+# Коэффициент и p-value для переменной "Пол"
+coef_gender = coefficients[3]
+p_val_gender = p_values[3]
+
+print(f"Коэффициент при 'Пол': β₃ = {coef_gender:.4f}")
+print(f"p-value: {p_val_gender:.4f} (α = {alpha})")
+
+if p_val_gender < alpha:
+    print(f"\nВЫВОД: p-value ({p_val_gender:.4f}) < α ({alpha})")
+    print("Статистически значимое различие зарплат между мужчинами и женщинами при прочих равных.")
+else:
+    print(f"\nВЫВОД: p-value ({p_val_gender:.4f}) > α ({alpha})")
+    print("Различия зарплат по полу статистически незначимы при прочих равных.")
+
+print("\n=== Пункт 6: Значимость коэффициента при СТАЖЕ РАБОТЫ ===")
+coef_stazh = coeffs[1]
+p_val_stazh = p_values[1]
+
+print(f"Оценка коэффициента (β₁) для стажа: {coef_stazh:.4f}")
+print(f"Соответствующее p-value: {p_val_stazh:.4f}")
+print(f"Заданный уровень значимости α = {alpha}")
+
+if p_val_stazh < alpha:
+    print(f"\nРЕЗУЛЬТАТ: Так как p-value ({p_val_stazh:.4f}) меньше α ({alpha}),")
+    print("коэффициент считается статистически значимым.")
+    print("Это говорит о том, что стаж действительно влияет на зарплату,")
+    print("и наблюдаемое влияние не является случайным.")
+else:
+    print(f"\nРЕЗУЛЬТАТ: Так как p-value ({p_val_stazh:.4f}) больше α ({alpha}),")
+    print("коэффициент не является статистически значимым.")
+    print("Следовательно, влияние стажа на зарплату может быть случайным,")
+    print("и на основе данных нельзя с уверенностью утверждать о его значении.")
+
+
+print("\n=== Пункт 7: Значимость коэффициента при ОБРАЗОВАНИИ ===")
+# Коэффициент и p-value для образования
+coef_education = coeffs[2]
+p_val_education = p_values[2]
+
+print(f"Оценка коэффициента (β₂) для образования: {coef_education:.4f}")
+print(f"Соответствующее p-value: {p_val_education:.4f}")
+print(f"Заданный уровень значимости α = {alpha}")
+
+if p_val_education < alpha:
+    print(f"\nРЕЗУЛЬТАТ: Так как p-value ({p_val_education:.4f}) меньше α ({alpha}),")
+    print("коэффициент считается статистически значимым.")
+    print("Это означает, что дополнительный год образования реально влияет на уровень зарплаты,")
+    print("и наблюдаемая связь не случайна.")
+else:
+    print(f"\nРЕЗУЛЬТАТ: Так как p-value ({p_val_education:.4f}) больше α ({alpha}),")
+    print("коэффициент не считается статистически значимым.")
+    print("Следовательно, данные не дают основания утверждать, что образование влияет на зарплату.")
+
+
+# Пункт 8: Доверительные интервалы для теоретических коэффициентов регрессии модели
+
+print("\n=== Пункт 8: Доверительные интервалы ===")
+
+# Число наблюдений и число предикторов
+n = X_all.shape[0]
+p = X_all.shape[1]
+
+# Добавляем константу вручную
+X_with_const = np.column_stack([np.ones(n), X_all.values])
+
+# Остатки модели и MSE
+residuals = y - model_all.predict(X_all)
+mse = np.sum(residuals ** 2) / (n - p - 1)
+
+# Инвертированная матрица (X'X)^(-1)
+xtx_inv = np.linalg.inv(X_with_const.T @ X_with_const)
+
+# Коэффициенты модели с константой
+coeffs = np.append(model_all.intercept_, model_all.coef_)
+
+# Стандартные ошибки коэффициентов
+se = np.sqrt(np.diag(xtx_inv) * mse)
+
+# t-статистика для коэффициентов
+t_stats = coeffs / se
+
+# p-values для коэффициентов
+p_values = 2 * (1 - stats.t.cdf(np.abs(t_stats), n - p - 1))
+
+# t-критическое значение для доверительного интервала
+t_critical = stats.t.ppf(1 - alpha / 2, n - p - 1)
+
+# Доверительные интервалы
+ci_lower = coeffs - t_critical * se
+ci_upper = coeffs + t_critical * se
+
+# Названия коэффициентов
+coef_names = ['Константа (β₀)', 'Стаж (β₁)', 'Образование (β₂)', 'Пол (β₃)']
+
+print(f"\nДоверительные интервалы для коэффициентов модели 2 (γ = {gamma*100:.0f}%, α = {alpha}):")
+print("-" * 75)
+print(f"{'Коэффициент':<20} {'Оценка':<12} {'Нижняя граница':<18} {'Верхняя граница':<18}")
+print("-" * 75)
+
+for i in range(len(coeffs)):
+    print(f"{coef_names[i]:<20} {coeffs[i]:<12.4f} {ci_lower[i]:<18.4f} {ci_upper[i]:<18.4f}")
+print("-" * 75)
+
+print("\nИНТЕРПРЕТАЦИЯ:")
+print(f"С надежностью {gamma*100:.0f}% можно сделать следующие выводы о коэффициентах модели:")
+
+print(f"1. {coef_names[0]}: [{ci_lower[0]:.2f}, {ci_upper[0]:.2f}]")
+print("   Базовая зарплата, когда все факторы равны нулю (теоретическая стартовая зарплата).")
+
+print(f"2. {coef_names[1]}: [{ci_lower[1]:.2f}, {ci_upper[1]:.2f}]")
+print("   Каждый дополнительный год стажа увеличивает зарплату примерно на это значение долларов в час.")
+
+print(f"3. {coef_names[2]}: [{ci_lower[2]:.2f}, {ci_upper[2]:.2f}]")
+print("   Каждый дополнительный год обучения повышает зарплату примерно на эту величину.")
+
+print(f"4. {coef_names[3]}: [{ci_lower[3]:.2f}, {ci_upper[3]:.2f}]")
+print("   Если интервал полностью отрицательный, женщины получают меньше мужчин при прочих равных условиях;")
+print("   если положительный — женщины получают больше; если включает ноль — различия статистически незначимы.")
+
+# Пункт 9: Интервальная оценка прогнозной зарплаты
+print("\n=== Пункт 9: Интервальная оценка прогнозной зарплаты ===")
+
+# Подготовка данных для нового сотрудника
+x_new = np.array([[experience, edu_time, gender]])  # стаж, образование, пол
+
+# Точечный прогноз
+y_pred_new = model_all.predict(x_new)[0]
+
+# Число наблюдений и предикторов
+n = X_all.shape[0]
+p = X_all.shape[1]
+
+# Остатки модели и MSE
+residuals = y - model_all.predict(X_all)
+mse = np.sum(residuals ** 2) / (n - p - 1)
+
+# Матрица X с константой
+X_with_const = np.column_stack([np.ones(n), X_all.values])
+x_new_with_const = np.append(1, x_new[0])
+
+# Инвертированная матрица X'X
+xtx_inv = np.linalg.inv(X_with_const.T @ X_with_const)
+
+# Дисперсия среднего прогноза
+var_mean_pred = mse * (x_new_with_const @ xtx_inv @ x_new_with_const.T)
+se_mean_pred = np.sqrt(var_mean_pred)
+
+# Дисперсия индивидуального прогноза
+var_individual_pred = mse * (1 + x_new_with_const @ xtx_inv @ x_new_with_const.T)
+se_individual_pred = np.sqrt(var_individual_pred)
+
+# t-критическое значение
+t_critical = stats.t.ppf(1 - alpha / 2, n - p - 1)
+
+# Доверительный интервал для среднего значения
+ci_lower_mean = max(y_pred_new - t_critical * se_mean_pred, 0)
+ci_upper_mean = y_pred_new + t_critical * se_mean_pred
+
+# Прогнозный интервал для индивидуального значения
+ci_lower_individual = max(y_pred_new - t_critical * se_individual_pred, 0)
+ci_upper_individual = y_pred_new + t_critical * se_individual_pred
+
+# Вывод результатов
+print("\nПрогноз зарплаты с доверительным интервалом:")
+print(f"• Точечный прогноз: {y_pred_new:.2f} долл./час")
+print(f"• Доверительный интервал для средней зарплаты сотрудников с такими характеристиками: [{ci_lower_mean:.2f}, {ci_upper_mean:.2f}] долл./час")
+print(f"• Прогнозный интервал для конкретного сотрудника: [{ci_lower_individual:.2f}, {ci_upper_individual:.2f}] долл./час")
+print(f"• Стандартная ошибка среднего прогноза: {se_mean_pred:.2f}")
+print(f"• Стандартная ошибка индивидуального прогноза: {se_individual_pred:.2f}")
+
+print("\nИНТЕРПРЕТАЦИЯ:")
+print(f"1. Ожидаемая средняя зарплата сотрудника с заданными характеристиками: {y_pred_new:.2f} долл./час")
+print(f"2. С надежностью {gamma*100:.1f}% средняя зарплата сотрудников с такими же характеристиками находится в интервале [{ci_lower_mean:.2f}, {ci_upper_mean:.2f}] долл./час.")
+print(f"3. Для конкретного сотрудника зарплата с вероятностью {gamma*100:.1f}% будет находиться примерно в интервале [{ci_lower_individual:.2f}, {ci_upper_individual:.2f}] долл./час.")
+
+print("\n=== Пункт 10: Изменение зарплаты при увеличении стажа на 2 года ===")
+
+# Пункт 10: Изменение зарплаты при увеличении стажа на 2 года
+# Используем коэффициент при стаже из модели 2
+delta_years = 2
+delta_salary_stazh = delta_years * coeffs[1]
+
+print(f"Коэффициент при стаже (β₁): {coeffs[1]:.4f}")
+print(f"Если стаж увеличится на {delta_years} года(лет), то ожидаемое изменение зарплаты составит:")
+print(f"Зарплата = {delta_years} × {coeffs[1]:.4f} = {delta_salary_stazh:.4f} долл./час")
+
+print("\nИНТЕРПРЕТАЦИЯ:")
+print(f"При увеличении стажа работы на {delta_years} года(лет) зарплата в среднем изменится на {delta_salary_stazh:.2f} долл./час.")
+print("Это отражает среднее влияние стажа на уровень оплаты при прочих равных условиях (образование и пол остаются неизменными).")
+
+print("\n=== Пункт 11: Прибавка к зарплате за дополнительный год образования ===")
+
+# Пункт 11: Прибавка к зарплате за дополнительный год образования
+# Используем коэффициент при образовании из модели 2
+delta_edu = 1
+delta_salary_edu = delta_edu * coeffs[2]
+
+print(f"Коэффициент при образовании (β₂): {coeffs[2]:.4f}")
+print(f"Дополнительный год обучения увеличивает зарплату примерно на:")
+print(f"Зарплата = {delta_edu} × {coeffs[2]:.4f} = {delta_salary_edu:.4f} долл./час")
+
+print("\nИНТЕРПРЕТАЦИЯ:")
+print(f"Каждый дополнительный год образования повышает среднюю зарплату сотрудника на {delta_salary_edu:.2f} долл./час,")
+print("при условии, что другие факторы (стаж и пол) остаются неизменными.")
+
+print("\n=== Пункт 12: Гендерная дискриминация ===")
+
+# Пункт 12: Гендерная дискриминация
+print(f"Коэффициент при 'Пол' (β₃) = {coeffs[3]:.4f}")
+print("Примечание: Пол = 1 (женщина), Пол = 0 (мужчина)")
+print(f"Знак коэффициента: {'отрицательный' if coeffs[3] < 0 else 'положительный'}")
+
+if p_val_gender < alpha:
+    print(f"\nВЫВОД: Коэффициент при поле значим (p-value = {p_val_gender:.4f}).")
+    if coeffs[3] < 0:
+        print("Это означает, что женщины получают в среднем МЕНЬШЕ, чем мужчины при прочих равных условиях.")
+        print("Такая разница может указывать на возможную дискриминацию по гендеру.")
+    else:
+        print("Это означает, что женщины получают в среднем БОЛЬШЕ, чем мужчины при прочих равных условиях.")
+        print("Дискриминации против женщин в данном случае не наблюдается.")
+else:
+    print(f"\nВЫВОД: Коэффициент при поле не значим (p-value = {p_val_gender:.4f}).")
+    print("Нет статистических доказательств различий зарплат по полу.")
+    print("На основании данных нельзя утверждать о дискриминации по гендеру.")
